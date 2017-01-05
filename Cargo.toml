@@ -1,0 +1,9 @@
+[package]
+name = "irex"
+version = "0.1.0"
+authors = ["Sebastian Köln <sebk@rynx.org>"]
+
+[dependencies]
+
+[dependencies.rex]
+path = "../ReX"

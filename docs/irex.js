@@ -1,0 +1,1 @@
+../target/asmjs-unknown-emscripten/release/irex.js
