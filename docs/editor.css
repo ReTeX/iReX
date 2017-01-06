@@ -4,7 +4,20 @@
     justify-content: space-between;
     flex: 1 0 2em;
 }
-#nav {flex: 1 0;}
+#nav {
+    flex: 1 0;
+    font-size: 9pt;
+}
+#nav > * {
+    margin: 0;
+}
+#nav > p {
+    cursor: pointer;
+    margin: 0 0 3pt 0;
+}
+#nav > p::before {
+    content: attr(title);
+}
 #container {
     flex: 4 40em;
     flex-direction: column;
