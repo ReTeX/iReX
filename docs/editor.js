@@ -1,19 +1,26 @@
 let input_element;
 let worker;
-let svg_element;
+let svg_element = null;
 let nav;
+let status = null;
+let view_element;
 
 worker = new Worker('worker.js');
-worker.addEventListener('message',
-    function(e) {
-        svg_element.innerHTML = e.data.svg;
-    }
-);
+
 function send_input(input) {
     console.log("submit:", input);
     worker.postMessage({
         input: input
     });
+    
+    if (svg_element) {
+        view.removeChild(svg_element);
+        svg_element = null;
+    }
+    status = document.createElement("p");
+    status.id = "status-msg";
+    status.appendChild(document.createTextNode("processing …"));
+    view.appendChild(status);
 }
 
 function input_from_element(e) {
@@ -27,8 +34,21 @@ function update_input(e) {
     send_input(input);
 }
 
+function update_view(e) {
+    let p = new DOMParser();
+    let svg = p.parseFromString(e.data.svg, "image/svg+xml");
+    svg.id = "view-svg";
+    
+    if (status) {
+        view.removeChild(status);
+        status = null;
+    }
+    svg_element = svg.firstElementChild;
+    view.appendChild(svg_element);
+}
+
 document.addEventListener("DOMContentLoaded", function(e) {
-    svg_element = document.getElementById("view-svg");
+    view_element = document.getElementById("view");
     nav = document.getElementById("nav");
     input_element = document.getElementById("input");
     
@@ -45,6 +65,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
         }
     });
     
+    worker.addEventListener('message', update_view);
     input_element.addEventListener("change", update_input);
     update_input();
 });

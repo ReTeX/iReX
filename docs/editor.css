@@ -27,11 +27,14 @@
     justify-content: space-between;
 }
 #view {
-    /* display: flex; */
+     display: flex;
     flex: 1 5em;
     /* align-self: stretch; */
     border: 1px solid green;
     overflow: scroll;
+    justify-content: center;
+    align-items: stretch;
+    align-content: stretch;
 }
 #view-svg {
     overflow: visible;
@@ -39,6 +42,9 @@
 #zoom-ctl {
     position: absolute;
     right: 0;
+    top: 0;
+}
+#status-msg {
 }
 body {
     flex-flow: row;
