@@ -13,7 +13,7 @@ function send_input(input) {
 }
 
 function update_input(e) {
-    let input = e.target.innerHTML;
+    let input = e.target.value;
     send_input(input);
 }
 
