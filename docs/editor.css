@@ -2,6 +2,7 @@
     border: 1px solid blue;
     overflow-y: scroll;
     justify-content: space-between;
+    flex: 1 2em;
 }
 #nav {flex: 1 20em;}
 #container {
@@ -14,11 +15,16 @@
 }
 #view {
     /* display: flex; */
-    flex: 1 fill;
+    flex: 1 5em;
     /* align-self: stretch; */
+    border: 1px solid green;
 }
 body {
     flex-flow: row;
     display: flex;
-    /* align-content: stretch; */
+    position: absolute;
+    right: 0;
+    left: 0;
+    top: 0;
+    bottom: 0;
 }
