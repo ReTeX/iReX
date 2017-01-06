@@ -27,5 +27,5 @@ let zoom_level = 0;
 function zoom(level) {
     zoom_level += level;
     let svg = document.getElementById("view-svg");
-    svg.style.zoom = Math.pow(0.7, zoom_level);
+    svg.style.zoom = Math.pow(1.3, zoom_level);
 }
