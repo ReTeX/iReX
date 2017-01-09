@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
     });
     
     worker.addEventListener('message', update_view);
-    input_element.addEventListener("change", update_input);
+    input_element.addEventListener("input", update_input);
     update_input();
 });
 
