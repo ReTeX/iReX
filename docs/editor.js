@@ -8,36 +8,28 @@ let view_element;
 worker = new Worker('worker.js');
 
 function send_input(input) {
-    console.log("submit:", input);
     worker.postMessage({
         input: input
     });
     
-    if (svg_element) {
-        view.removeChild(svg_element);
-        svg_element = null;
-    }
-    status = document.createElement("p");
-    status.id = "status-msg";
-    status.appendChild(document.createTextNode("processing …"));
-    view.appendChild(status);
+    status.innerHTML = "processing …";
 }
 
 function input_from_element(e) {
     let input = e.target.latex;
-    input_element.value = input;
+    input_element.textContent = input;
     send_input(input);
 }
 
 function update_input(e) {
-    let input = document.getElementById("input").value;
-    send_input(input);
+    send_input(input_element.textContent);
 }
-
 function update_view(e) {
-    if (status) {
-        view.removeChild(status);
-        status = null;
+    status.innerHTML = "";
+    
+    if (svg_element) {
+        view.removeChild(svg_element);
+        svg_element = null;
     }
     if (e.data.svg.length) {
         let p = new DOMParser();
@@ -54,6 +46,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
     view_element = document.getElementById("view");
     nav = document.getElementById("nav");
     input_element = document.getElementById("input");
+    status = document.getElementById("status");
     
     var examples = new Request("examples.json");
     fetch(examples)
