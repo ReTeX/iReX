@@ -44,6 +44,7 @@ function update_view(e) {
         status = null;
     }
     svg_element = svg.firstElementChild;
+    zoom(0);
     view.appendChild(svg_element);
 }
 
