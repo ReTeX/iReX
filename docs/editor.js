@@ -35,17 +35,19 @@ function update_input(e) {
 }
 
 function update_view(e) {
-    let p = new DOMParser();
-    let svg = p.parseFromString(e.data.svg, "image/svg+xml");
-    svg.id = "view-svg";
-    
     if (status) {
         view.removeChild(status);
         status = null;
     }
-    svg_element = svg.firstElementChild;
-    zoom(0);
-    view.appendChild(svg_element);
+    if (e.data.svg.length) {
+        let p = new DOMParser();
+        let svg = p.parseFromString(e.data.svg, "image/svg+xml");
+        svg.id = "view-svg";
+        
+        svg_element = svg.firstElementChild;
+        zoom(0);
+        view.appendChild(svg_element);
+    }
 }
 
 document.addEventListener("DOMContentLoaded", function(e) {
