@@ -25,21 +25,24 @@ function update_input(e) {
     send_input(input_element.textContent);
 }
 function update_view(e) {
-    status.innerHTML = "";
+    let data = e.data;
     
     if (svg_element) {
         view.removeChild(svg_element);
         svg_element = null;
     }
+    let t0 = new Date();
     if (e.data.svg.length) {
         let p = new DOMParser();
-        let svg = p.parseFromString(e.data.svg, "image/svg+xml");
+        let svg = p.parseFromString(data.svg, "image/svg+xml");
         svg.id = "view-svg";
         
         svg_element = svg.firstElementChild;
         zoom(0);
         view.appendChild(svg_element);
     }
+    let t1 = new Date();
+    status.innerHTML = `rex: ${ data.time }ms, parsing: ${ t1 - t0 }ms`;
 }
 
 document.addEventListener("DOMContentLoaded", function(e) {
