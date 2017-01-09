@@ -3,7 +3,8 @@
 extern crate rex;
 
 #[cfg_attr(target_arch="asmjs",
-           link_args="-s EXPORTED_FUNCTIONS=['_render'] --js-library src/lib.js")]
+  link_args="-s EXPORTED_FUNCTIONS=['_render'] --js-library src/lib.js")]
+
 extern "C" {
     fn _done(data: *const u8, len: usize);
 }
