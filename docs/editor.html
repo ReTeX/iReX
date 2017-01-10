@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8" />
         <link rel="stylesheet" href="editor.css" />
+        <script type="text/javascript" src="irex.js"></script>
         <script type="text/javascript" src="editor.js"></script>
     </head>
     
@@ -11,6 +12,10 @@
         <div id="container">
             <div id="view">
                 <div id="zoom-ctl">
+                    <select id="mode-select">
+                        <option value="svg">SVG</option>
+                        <option value="canvas">Canvas</option>
+                    </select>
                     <input type="button" value="+" onclick="zoom(+1)"/>
                     <input type="button" value="-" onclick="zoom(-1)"/>
                 </div>

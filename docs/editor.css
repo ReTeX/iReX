@@ -41,6 +41,10 @@
 #view-svg {
     overflow: visible;
 }
+#view-canvas {
+    overflow: visible;
+    display: block;
+}
 #zoom-ctl {
     position: absolute;
     right: 0;
