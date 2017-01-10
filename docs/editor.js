@@ -41,9 +41,7 @@ var render = {
         ctx.fillText(glyph, x * zoom_factor, y * zoom_factor);
     },
     rule: function(x, y, w, h) {
-        ctx.beginPath();
-        ctx.moveTo(zoom_factor * x, zoom_factor * y);
-        ctx.lineTo(zoom_factor * (x + w), zoom_factor * (y + h));
+        ctx.fillRect(x * zoom_factor, y * zoom_factor, w * zoom_factor, h * zoom_factor);
     }
 };
 
