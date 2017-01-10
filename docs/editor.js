@@ -1,8 +1,8 @@
 var input_element;
 var worker;
-var view_element = null;
+var view_element;
 var nav;
-var status_element = null;
+var status_element;
 var view;
 var mode = "svg";
 
@@ -12,17 +12,18 @@ var fontsize = 48.0;
 var current_size = null;
 var zoom_level = 0;
 var zoom_factor = 1.0;
+var color_stack = [];
 
 var render = {
     prepare: function(width_f, height_f) {
-        var width = Math.ceil(width_f * zoom_factor);
-        var height = Math.ceil(height_f * zoom_factor);
+        var width = Math.ceil(width_f);
+        var height = Math.ceil(height_f);
         var canvas = document.createElement("canvas");
         canvas.id = "view-canvas";
         canvas.width = width;
         canvas.height = height;
         canvas.style.height = `${height}px`;
-        ctx = canvas.getContext("2d");
+        ctx = canvas.getContext("2d", { alpha: true } );
         current_size = null;
     },
     finish: function() {
@@ -31,17 +32,23 @@ var render = {
     bbox: function(x, y, w, h) {
         //ctx.strokeRect(x, y, w, h);
     },
-    symbol: function(x, y, codepoint, scale) {
+    symbol: function(x, y, codepoint, size) {
         let glyph = String.fromCodePoint(codepoint);
-        let size = scale * fontsize * zoom_factor;
         if (current_size !== size) {
             ctx.font = `${size}px rex`;
             current_size = size;
         }
-        ctx.fillText(glyph, x * zoom_factor, y * zoom_factor);
+        ctx.fillText(glyph, x, y);
     },
     rule: function(x, y, w, h) {
-        ctx.fillRect(x * zoom_factor, y * zoom_factor, w * zoom_factor, h * zoom_factor);
+        ctx.fillRect(x, y, w, h);
+    },
+    color_push: function(color) {
+        color_stack.push(ctx.fillStyle);
+        ctx.fillStyle = color;
+    },
+    color_pop: function() {
+        ctx.fillStyle = color_stack.pop();
     }
 };
 
@@ -50,7 +57,7 @@ function render_canvas(input) {
     let input_len = lengthBytesUTF8(input);
     let input_data_p = _malloc(input_len+1);
     stringToUTF8(input, input_data_p, input_len+1);
-    _render_direct(input_data_p, input_len);
+    _render_direct(input_data_p, input_len, fontsize * zoom_factor);
     _free(input_data_p);
 }
 
@@ -63,10 +70,7 @@ function render_svg(input) {
     _free(input_data_p);
 }
 
-function render_done(data_p, data_len) {
-    var data = Module.HEAPU8.subarray(data_p, data_p+data_len);
-    var str = UTF8Decoder.decode(data);
-    console.log(str);
+function render_done(str) {
     if (str.length == 0) {
         status("empty SVG file");
         return;
@@ -74,7 +78,7 @@ function render_done(data_p, data_len) {
     var p = new DOMParser();
     var svg = p.parseFromString(str, "image/svg+xml").firstElementChild;
     svg.id = "view-svg";
-    svg.zoom = zoom_level;
+    svg.zoom = zoom_factor;
     update_view(svg);
 }
 
@@ -161,4 +165,17 @@ function zoom(level) {
     } else {
         view_element.style.zoom = zoom_factor;
     }
+}
+
+function bench() {
+    var t_start = new Date();
+    var t_end = t_start;
+    var runs = 0;
+    while (t_end - t_start < 1000 || runs < 10) {
+        update_input();
+        t_end = new Date();
+        runs += 1;
+    }
+    
+    console.log(`${(t_end - t_start) / runs}ms`);
 }

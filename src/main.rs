@@ -6,12 +6,14 @@ extern crate rex;
   link_args="-s EXPORTED_FUNCTIONS=['_render_svg','_render_direct'] --js-library src/lib.js")]
 
 extern "C" {
-    fn _done(data: *const u8, len: usize);
+    fn svg_done(data: *const u8, len: usize);
     fn draw_prepare(width: Float, height: Float);
     fn draw_finish();
     fn draw_bbox(x: Float, y: Float, width: Float, height: Float);
-    fn draw_symbol(x: Float, y: Float, codepoint: u32, scale: Float);
+    fn draw_symbol(x: Float, y: Float, codepoint: u32, size: Float);
     fn draw_rule(x: Float, y: Float, width: Float, height: Float);
+    fn color_push(color_p: *const u8, color_len: usize);
+    fn color_pop();
 }
 
 use std::slice;
@@ -19,20 +21,12 @@ use std::str;
 use rex::dimensions::{Pixels, Float};
 use rex::render::{Renderer, RenderSettings, SVGRenderer};
 
-
-fn done(data: &[u8]) {
-    unsafe {
-        _done(data.as_ptr(), data.len());
-    }
-}
-
 #[no_mangle]
 pub extern "C" fn render_svg(input_p: *const u8, input_len: usize, fontsize: Float) {
     let input_raw = unsafe {
         slice::from_raw_parts(input_p, input_len)
     };
     let input = str::from_utf8(input_raw).expect("invalid utf8");
-    println!("input: {}", input);
     
     let mut data = String::new();
     let settings = RenderSettings::default()
@@ -40,18 +34,22 @@ pub extern "C" fn render_svg(input_p: *const u8, input_len: usize, fontsize: Flo
         .font_src("rex-xits.otf")
         .debug(false);
     SVGRenderer::new(&mut data, &settings).render(input);
-    done(data.as_bytes());
+    unsafe {
+        svg_done(data.as_ptr(), data.len());
+    }
 }
 
 #[no_mangle]
-pub extern "C" fn render_direct(input_p: *const u8, input_len: usize) {
+pub extern "C" fn render_direct(input_p: *const u8, input_len: usize, fontsize: Float) {
     let input_raw = unsafe {
         slice::from_raw_parts(input_p, input_len)
     };
     let input = str::from_utf8(input_raw).expect("invalid utf8");
-    println!("input: {}", input);
     
-    IReX::new(&RenderSettings::default()).render(input);
+    IReX::new(
+        &RenderSettings::default()
+        .font_size(fontsize)
+    ).render(input);
 }
 
 struct IReX<'a> {
@@ -102,7 +100,7 @@ impl<'a> Renderer for IReX<'a> {
 
     fn symbol(&mut self, symbol: u32, scale: Float) {
         unsafe {
-            draw_symbol(self.cursor_x, self.cursor_y, symbol, scale)
+            draw_symbol(self.cursor_x, self.cursor_y, symbol, scale * self.settings.font_size)
         }
     }
     
@@ -115,7 +113,13 @@ impl<'a> Renderer for IReX<'a> {
     fn color<F>(&mut self, color: &str, mut contents: F)
         where F: FnMut(&mut Self)
     {
-        contents(self)
+        unsafe {
+            color_push(color.as_ptr(), color.len());
+        }
+        contents(self);
+        unsafe {
+            color_pop();
+        }
     }
     
 }
