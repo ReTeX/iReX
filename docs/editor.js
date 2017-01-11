@@ -13,6 +13,7 @@ var current_size = null;
 var zoom_level = 0;
 var zoom_factor = 1.0;
 var color_stack = [];
+var status_message = null;
 
 var render = {
     prepare: function(width_f, height_f) {
@@ -83,12 +84,11 @@ function render_done(str) {
 }
 
 function status(s) {
-    status_element.innerHTML = s;
+    status_element.textContent = s;
 }
 
 function send_input(input) {
     t0 = new Date();
-    status(`processing as ${mode} …`);
     switch (mode) {
         case 'svg':
             render_svg(input);
@@ -131,17 +131,18 @@ Promise.all([
     nav = document.getElementById("nav");
     input_element = document.getElementById("input");
     status_element = document.getElementById("status");
+    var examples_element = document.getElementById("examples");
     
     var examples = new Request("examples.json");
     fetch(examples)
     .then(response => response.json())
     .then(function(json) {
         for (var ex of json) {
-            let p = document.createElement("p");
-            p.setAttribute("title", ex.title);
-            p.latex = ex.latex;
-            p.addEventListener("click", input_from_element);
-            nav.appendChild(p);
+            var e = document.createElement("li");
+            e.appendChild(document.createTextNode(ex.title));
+            e.latex = ex.latex;
+            e.addEventListener("click", input_from_element);
+            examples_element.appendChild(e);
         }
     });
     
@@ -177,5 +178,29 @@ function bench() {
         runs += 1;
     }
     
-    console.log(`${(t_end - t_start) / runs}ms`);
+    status(`${(t_end - t_start) / runs}ms`);
+}
+
+var test_running = null;
+function test_next() {
+    if (test_running.pos < test_running.cases.length) {
+        var tex = test_running.cases[test_running.pos];
+        test_running.pos += 1;
+        send_input(tex);
+        setTimeout(test_next, 20);
+    } else {
+        test_running = null;
+    }
+}
+function test() {
+    var pass = new Request("pass.json");
+    fetch(pass)
+    .then(response => response.json())
+    .then(function(json) {
+        test_running = {
+            cases:  json,
+            pos:    0
+        };
+        test_next();
+    });
 }

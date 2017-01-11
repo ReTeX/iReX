@@ -16,7 +16,11 @@
 #nav > * {
     margin: 0;
 }
-#nav > p {
+#nav > ul {
+    list-style: none;
+    padding: 0 0 0 1em;
+}
+#nav > ul > li {
     cursor: pointer;
     margin: 0 0 3pt 0;
 }
