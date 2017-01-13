@@ -14,6 +14,7 @@ var zoom_level = 0;
 var zoom_factor = 1.0;
 var color_stack = [];
 var status_message = null;
+var render_success = null;
 
 var render = {
     prepare: function(width_f, height_f) {
@@ -29,9 +30,6 @@ var render = {
     },
     finish: function() {
         update_view(ctx.canvas);
-    },
-    bbox: function(x, y, w, h) {
-        //ctx.strokeRect(x, y, w, h);
     },
     symbol: function(x, y, codepoint, size) {
         let glyph = String.fromCodePoint(codepoint);
@@ -79,7 +77,7 @@ function render_done(str) {
     var p = new DOMParser();
     var svg = p.parseFromString(str, "image/svg+xml").firstElementChild;
     svg.id = "view-svg";
-    svg.zoom = zoom_factor;
+    svg.style.zoom = zoom_factor;
     update_view(svg);
 }
 
@@ -88,7 +86,7 @@ function status(s) {
 }
 
 function send_input(input) {
-    t0 = new Date();
+    render_success = false;
     switch (mode) {
         case 'svg':
             render_svg(input);
@@ -99,26 +97,31 @@ function send_input(input) {
     }
 }
 
+function send_input_measured(input) {
+    t0 = performance.now();
+    send_input(input);
+    t1 = performance.now();
+    status(`mode: ${mode}, time: ${ (t1 - t0).toFixed(3) }ms`);
+}
+
 // something was clicked on
 function input_from_element(e) {
     let input = e.target.latex;
     input_element.textContent = input;
-    send_input(input);
+    send_input_measured(input);
 }
 // text input changed
 function update_input() {
-    send_input(input_element.textContent);
+    send_input_measured(input_element.textContent);
 }
 // render complete
 function update_view(element) {
+    render_success = true;
     if (view_element) {
         view.removeChild(view_element);
     }
     view_element = element;
     view.appendChild(view_element);
-    
-    let t1 = new Date();
-    status(`mode: ${mode}, time: ${ t1 - t0 }ms`);
 }
 
 Promise.all([
@@ -148,7 +151,6 @@ Promise.all([
     
     document.getElementById("mode-select").addEventListener("change", function(e) {
         mode = e.target.value;
-        status(`render mode: ${mode}`);
         update_input();
     });
     
@@ -168,28 +170,24 @@ function zoom(level) {
     }
 }
 
-function bench() {
-    var t_start = new Date();
-    var t_end = t_start;
-    var runs = 0;
-    while (t_end - t_start < 1000 || runs < 10) {
-        update_input();
-        t_end = new Date();
-        runs += 1;
-    }
-    
-    status(`${(t_end - t_start) / runs}ms`);
-}
-
 var test_running = null;
+var test_stats;
 function test_next() {
-    if (test_running.pos < test_running.cases.length) {
-        var tex = test_running.cases[test_running.pos];
-        test_running.pos += 1;
-        send_input(tex);
-        setTimeout(test_next, 20);
-    } else {
+    var o = test_running.next();
+    if (o.done) {
         test_running = null;
+        status(`${ test_stats.success } of ${ test_stats.total } passed`);
+        return;
+    }
+    send_input(o.value);
+    if (render_success) {
+        test_stats.success += 1;
+    }
+    setTimeout(test_next, 20);
+}
+function* tests_pass(json) {
+    for (var tex of json) {
+        yield tex;
     }
 }
 function test() {
@@ -197,9 +195,10 @@ function test() {
     fetch(pass)
     .then(response => response.json())
     .then(function(json) {
-        test_running = {
-            cases:  json,
-            pos:    0
+        test_running = tests_pass(json);
+        test_stats = {
+            total: json.length,
+            success: 0
         };
         test_next();
     });

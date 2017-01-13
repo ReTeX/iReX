@@ -2,6 +2,8 @@
 
 extern crate rex;
 
+type Float = f64;
+
 #[cfg_attr(target_arch="asmjs",
   link_args="-s EXPORTED_FUNCTIONS=['_render_svg','_render_direct'] --js-library src/lib.js")]
 
@@ -9,7 +11,6 @@ extern "C" {
     fn svg_done(data: *const u8, len: usize);
     fn draw_prepare(width: Float, height: Float);
     fn draw_finish();
-    fn draw_bbox(x: Float, y: Float, width: Float, height: Float);
     fn draw_symbol(x: Float, y: Float, codepoint: u32, size: Float);
     fn draw_rule(x: Float, y: Float, width: Float, height: Float);
     fn color_push(color_p: *const u8, color_len: usize);
@@ -18,8 +19,8 @@ extern "C" {
 
 use std::slice;
 use std::str;
-use rex::dimensions::{Pixels, Float};
-use rex::render::{Renderer, RenderSettings, SVGRenderer};
+use rex::dimensions::{Pixels};
+use rex::render::*;
 
 #[no_mangle]
 pub extern "C" fn render_svg(input_p: *const u8, input_len: usize, fontsize: Float) {
@@ -28,12 +29,11 @@ pub extern "C" fn render_svg(input_p: *const u8, input_len: usize, fontsize: Flo
     };
     let input = str::from_utf8(input_raw).expect("invalid utf8");
     
-    let mut data = String::new();
     let settings = RenderSettings::default()
         .font_size(fontsize)
         .font_src("rex-xits.otf")
         .debug(false);
-    SVGRenderer::new(&mut data, &settings).render(input);
+    let data: String = SVGRenderer::new(&settings).render(input);
     unsafe {
         svg_done(data.as_ptr(), data.len());
     }
@@ -53,70 +53,53 @@ pub extern "C" fn render_direct(input_p: *const u8, input_len: usize, fontsize: 
 }
 
 struct IReX<'a> {
-    cursor_x: Float,
-    cursor_y: Float,
     settings: &'a RenderSettings
 }
 impl<'a> IReX<'a> {
     fn new(settings: &RenderSettings) -> IReX {
         IReX {
-            cursor_x: 0.0,
-            cursor_y: 0.0,
             settings: settings
         }
     }
 }
 impl<'a> Renderer for IReX<'a> {
+    type Out = ();
+    
     fn settings(&self) -> &RenderSettings {
         self.settings
     }
     
-    fn g<F>(&mut self, off_x: Pixels, off_y: Pixels, mut contents: F)
-    where F: FnMut(&mut Self) {
-        contents(&mut IReX {
-            cursor_x: self.cursor_x + *off_x,
-            cursor_y: self.cursor_y + *off_y,
-            settings: self.settings
-        })
-    }
-
-    fn prepare(&mut self, width: Pixels, height: Pixels) {
+    fn prepare(&self, _: &mut (), width: Pixels, height: Pixels) {
         unsafe {
             draw_prepare(*width, *height);
         }
     }
     
-    fn finish(&mut self) {
+    fn finish(&self, _: &mut ()) {
         unsafe {
             draw_finish();
         }
     }
-    
-    fn bbox(&mut self, width: Pixels, height: Pixels) {
-        unsafe {
-            draw_bbox(self.cursor_x, self.cursor_y, *width, *height);
-        }
-    }
 
-    fn symbol(&mut self, symbol: u32, scale: Float) {
+    fn symbol(&self, _: &mut (), pos: Cursor, symbol: u32, scale: Float) {
         unsafe {
-            draw_symbol(self.cursor_x, self.cursor_y, symbol, scale * self.settings.font_size)
+            draw_symbol(*pos.x, *pos.y, symbol, scale * self.settings.font_size)
         }
     }
     
-    fn rule(&mut self, x: Pixels, y: Pixels, width: Pixels, height: Pixels) {
+    fn rule(&self, _: &mut (), pos: Cursor, width: Pixels, height: Pixels) {
         unsafe {
-            draw_rule(self.cursor_x + *x, self.cursor_y + *y, *width, *height)
+            draw_rule(*pos.x, *pos.y, *width, *height)
         }
     }
 
-    fn color<F>(&mut self, color: &str, mut contents: F)
-        where F: FnMut(&mut Self)
+    fn color<F>(&self, o: &mut (), color: &str, mut contents: F)
+        where F: FnMut(&Self, &mut ())
     {
         unsafe {
             color_push(color.as_ptr(), color.len());
         }
-        contents(self);
+        contents(self, o);
         unsafe {
             color_pop();
         }

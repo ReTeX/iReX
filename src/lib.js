@@ -9,9 +9,6 @@ mergeInto(LibraryManager.library, {
     draw_finish: function() {
         render.finish();
     },
-    draw_bbox: function(x, y, w, h) {
-        render.bbox(x, y, w, h);
-    },
     draw_symbol: function(x, y, codepoint, scale) {
         render.symbol(x, y, codepoint, scale);
     },
