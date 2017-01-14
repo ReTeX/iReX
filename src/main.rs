@@ -5,7 +5,8 @@ extern crate rex;
 type Float = f64;
 
 #[cfg_attr(target_arch="asmjs",
-  link_args="-s EXPORTED_FUNCTIONS=['_render_svg','_render_direct'] --js-library src/lib.js")]
+  link_args="-s EXPORTED_FUNCTIONS=['_render_svg','_render_direct'] --js-library src/lib.js \
+  --memory-init-file 1")]
 
 extern "C" {
     fn svg_done(data: *const u8, len: usize);
