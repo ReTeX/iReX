@@ -7,4 +7,4 @@ authors = ["Sebastian Köln <sebk@rynx.org>"]
 git = "https://github.com/ReTeX/ReX.git"
 
 [profile.release]
-opt-level = 3
+opt-level = "z"
