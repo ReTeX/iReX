@@ -1,26 +1,26 @@
-var input_element;
-var worker;
-var view_element;
-var nav;
-var status_element;
-var view;
-var mode = "svg";
+let input_element;
+let worker;
+let view_element;
+let nav;
+let status_element;
+let view;
+let mode = localStorage.mode || "svg";
 
-var t0;
-var ctx;
-var fontsize = 48.0;
-var current_size = null;
-var zoom_level = 0;
-var zoom_factor = 1.0;
-var color_stack = [];
-var status_message = null;
-var render_success = null;
+let t0;
+let ctx;
+let fontsize = 48.0;
+let current_size = null;
+let zoom_level = 0;
+let zoom_factor = 1.0;
+let color_stack = [];
+let status_message = null;
+let render_success = null;
 
-var render = {
+const render = {
     prepare: function(width_f, height_f) {
-        var width = Math.ceil(width_f);
-        var height = Math.ceil(height_f);
-        var canvas = document.createElement("canvas");
+        let width = Math.ceil(width_f);
+        let height = Math.ceil(height_f);
+        let canvas = document.createElement("canvas");
         canvas.id = "view-canvas";
         canvas.width = width;
         canvas.height = height;
@@ -42,9 +42,9 @@ var render = {
     rule: function(x, y, w, h) {
         ctx.fillRect(x, y, w, h);
     },
-    color_push: function(color) {
+    color_push: function(r, g, b, a) {
         color_stack.push(ctx.fillStyle);
-        ctx.fillStyle = color;
+        ctx.fillStyle = `rgba(${r/255.}, ${g/255.}, ${b/255.}, ${a/255.})`;
     },
     color_pop: function() {
         ctx.fillStyle = color_stack.pop();
@@ -74,8 +74,8 @@ function render_done(str) {
         status("empty SVG file");
         return;
     }
-    var p = new DOMParser();
-    var svg = p.parseFromString(str, "image/svg+xml").firstElementChild;
+    let p = new DOMParser();
+    let svg = p.parseFromString(str, "image/svg+xml").firstElementChild;
     svg.id = "view-svg";
     svg.style.zoom = zoom_factor;
     update_view(svg);
@@ -112,7 +112,9 @@ function input_from_element(e) {
 }
 // text input changed
 function update_input() {
-    send_input_measured(input_element.textContent);
+    let input = input_element.textContent;
+    localStorage.input = input;
+    send_input_measured(input);
 }
 // render complete
 function update_view(element) {
@@ -134,14 +136,14 @@ Promise.all([
     nav = document.getElementById("nav");
     input_element = document.getElementById("input");
     status_element = document.getElementById("status");
-    var examples_element = document.getElementById("examples");
+    let examples_element = document.getElementById("examples");
     
-    var examples = new Request("examples.json");
+    let examples = new Request("examples.json");
     fetch(examples)
     .then(response => response.json())
     .then(function(json) {
-        for (var ex of json) {
-            var e = document.createElement("li");
+        for (let ex of json) {
+            let e = document.createElement("li");
             e.appendChild(document.createTextNode(ex.title));
             e.latex = ex.latex;
             e.addEventListener("click", input_from_element);
@@ -149,8 +151,13 @@ Promise.all([
         }
     });
     
-    document.getElementById("mode-select").addEventListener("change", function(e) {
+    input_element.textContent = localStorage.input || "\\mathfrak{R_E} \\mathrm{T_E X}";
+    
+    let mode_select = document.getElementById("mode-select");
+    mode_select.value = mode;
+    mode_select.addEventListener("change", function(e) {
         mode = e.target.value;
+        localStorage.mode = mode;
         update_input();
     });
     
@@ -170,10 +177,10 @@ function zoom(level) {
     }
 }
 
-var test_running = null;
-var test_stats;
+let test_running = null;
+let test_stats;
 function test_next() {
-    var o = test_running.next();
+    let o = test_running.next();
     if (o.done) {
         test_running = null;
         status(`${ test_stats.success } of ${ test_stats.total } passed`);
@@ -182,16 +189,18 @@ function test_next() {
     send_input(o.value);
     if (render_success) {
         test_stats.success += 1;
+    } else {
+        console.error(`failed: ${o.value}`);
     }
     setTimeout(test_next, 20);
 }
 function* tests_pass(json) {
-    for (var tex of json) {
+    for (let tex of json) {
         yield tex;
     }
 }
 function test() {
-    var pass = new Request("pass.json");
+    let pass = new Request("pass.json");
     fetch(pass)
     .then(response => response.json())
     .then(function(json) {
